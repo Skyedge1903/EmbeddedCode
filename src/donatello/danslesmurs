@@ -1,0 +1,49 @@
+#! /usr/bin/env python
+
+import rospy
+import numpy as np
+import random
+from geometry_msgs.msg import Twist
+from std_msgs.msg import Int32
+
+class Donatello:
+    def __init__(self):
+        # Creates a node called 'my_example_node' and registers it to the ROS master
+        rospy.init_node('Donatello')
+
+        # Publisher to the topic '/cmd_vel'.
+        self.publisher = rospy.Publisher('/cmd_vel', Twist, queue_size=10)
+
+        # Subscriber to the topic '/ir_sensor'. self.callback is called when a message is received
+        self.subscriber = rospy.Subscriber('/ir_sensor', Int32, self.callback)
+
+    # Callback function called when a new message is received, msg is the message itself
+    def callback(self, msg):
+        move_cmd = Twist()
+        
+        if(msg.data < 600):
+        	move_cmd.linear.x = 0.05
+        	move_cmd.angular.z = 0
+        	print("En plein dans le mur !")
+        else :
+        	move_cmd.linear.x = 0
+        	if random.randint(0,1):
+        		move_cmd.angular.z = 0.5
+        	else:
+        		move_cmd.angular.z = -0.5
+        	print("Maman j'ai peur")
+
+        # Publish the output
+        self.publisher.publish(move_cmd)
+    	 
+
+# This section is only executed when the file itself is run
+if __name__ == '__main__':
+    try:
+        # Create the node and its publishers/subscribers
+        node = Donatello()	
+
+        # Make the node wait until it receives a message or stopped by Ctrl+C
+        rospy.spin()
+    except rospy.ROSInterruptException:
+        pass

@@ -1,0 +1,9 @@
+<launch>
+    <node name="rviz" pkg="rviz" type="rviz" args="-d $(find lidar)/lidar.rviz" output="screen" />
+    <node name="transformer" pkg="lidar" type="transformer" />
+    <node name="clusterer" pkg="lidar" type="clusterer" />
+    <node name="shaper_cylinder" pkg="lidar" type="shaper_cylinder" />
+    <node name="shaper_bbox" pkg="lidar" type="shaper_bbox" />
+    <node name="shaper_polyline" pkg="lidar" type="polyline" />
+    <!-- ToDo: Other Nodes -->
+</launch>

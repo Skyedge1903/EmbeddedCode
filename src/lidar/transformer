@@ -1,0 +1,70 @@
+#!/usr/bin/env python3
+
+import numpy as np
+import rospy
+
+# Type of input and output messages
+from sensor_msgs.point_cloud2 import create_cloud
+from sensor_msgs.msg import LaserScan, PointCloud2, PointField
+
+PC2FIELDS = [PointField('x', 0, PointField.FLOAT32, 1),
+             PointField('y', 4, PointField.FLOAT32, 1),
+             PointField('z', 8, PointField.FLOAT32, 1),
+             PointField('c', 12, PointField.INT16, 1)
+]
+
+def callback(msg):
+    coords = []
+
+    distance = []
+    angle = []
+    bin_distance = []
+    
+    for i, theta in enumerate(np.arange(msg.angle_min, msg.angle_max, msg.angle_increment)):
+        distance.append(msg.ranges[i])
+        angle.append(theta)
+            
+    for i in range(len(distance)):
+        if not i == 0:
+            if distance[i] < 0.1 or distance[i] > 0.4:
+                bin_distance.append(0)
+            else:
+                bin_distance.append(1)
+    
+    count = 0
+    max_count = 0
+    start_stop = (0, 0)
+    
+    for i in range(len(bin_distance)*2):
+        if not bin_distance[i%len(bin_distance)]:
+            if count > max_count:
+                max_count = count
+                start_stop = (i%len(bin_distance) - count, i%len(bin_distance))
+                count = 0
+        else :
+            count += 1
+    
+    if start_stop == (0, 0):
+        print ("Perdu !")
+    else :
+        mean = int(((start_stop[0]+start_stop[1]) / 2))%len(distance)
+        print(mean)
+    
+    for i, theta in enumerate(np.arange(msg.angle_min, msg.angle_max, msg.angle_increment)):
+		# ToDo: Remove points too close
+		# ToDo: Polar to Cartesian transformation
+	    if msg.ranges[i] > 0.1:
+		    x = np.cos(theta) * msg.ranges[i]
+		    y = np.sin(theta) * msg.ranges[i]
+		    coords.append((x, y))
+	
+	# Create a PointCloud2 message from coordinates
+    pc2 = create_cloud(msg.header, PC2FIELDS, [[x,y,0,0] for x,y in coords])
+    pub_pc2.publish(pc2)
+
+
+if __name__ == '__main__':
+    rospy.init_node('transformer')
+    pub_pc2 = rospy.Publisher('/lidar/points', PointCloud2, queue_size=10)
+    rospy.Subscriber('/scan', LaserScan, callback)
+    rospy.spin()
